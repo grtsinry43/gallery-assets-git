@@ -1,0 +1,59 @@
+name: Deploy to Vercel on Assets Change
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'thumbnails/**'
+      - 'photos-manifest.json'
+      - '.github/workflows/deploy.yml'
+
+jobs:
+  trigger-vercel-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changes
+        id: changes
+        run: |
+          echo "Changes detected in thumbnails directory or photos-manifest.json"
+          echo "Triggering deployment..."
+
+      # - name: Trigger Vercel Deploy Hook
+      #   env:
+      #     VERCEL_PROJECT_ID: prj_yDJoObd0nIz4IIXfJAtiF3jxq1kh
+      #     VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      #     VERCEL_HOOK_ID: nqKDbdsJ7m
+      #   run: |
+      #     curl -X POST "https://api.vercel.com/v1/integrations/deploy/${{ env.VERCEL_PROJECT_ID }}/${{ env.VERCEL_HOOK_ID }}" \
+      #       -H "Authorization: Bearer ${{ secrets.VERCEL_TOKEN }}"
+
+      # - name: Trigger Cloudflare Pages Deploy Hook
+      #   env:
+      #     CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #   run: |
+      #     curl -d "" "https://api.cloudflare.com/client/v4/pages/webhooks/deploy_hooks/${{ env.CLOUDFLARE_API_TOKEN }}"
+
+      - name: Trigger Railway Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: 54c8ed7b-2d3d-4ee9-ab51-5e3b71e76d7a
+          RAILWAY_ENVIRONMENT_ID: 761bf262-7d59-4496-97dc-e79bbd20fd22
+        run: |
+          curl -X POST "https://backboard.railway.com/graphql/v2" \
+            -H "Authorization: Bearer ${{ env.RAILWAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"mutation serviceInstanceRedeploy($serviceId: String!, $environmentId: String!) { serviceInstanceRedeploy(serviceId: $serviceId, environmentId: $environmentId) }","variables":{"serviceId":"${{ env.RAILWAY_SERVICE_ID }}","environmentId":"${{ env.RAILWAY_ENVIRONMENT_ID }}"}}'
+
+      - name: Deployment Status
+        run: |
+          # echo "✅ Vercel deployment hook triggered successfully"
+          # echo "✅ Cloudflare Pages deployment hook triggered successfully"
+          echo "✅ Railway deployment triggered successfully"
+          echo "🚀 Project ID: ${{ env.VERCEL_PROJECT_ID }}"
+          echo "📦 Organization ID: ${{ env.VERCEL_ORG_ID }}"
+          echo "🌿 Branch: ${{ github.ref_name }}"
